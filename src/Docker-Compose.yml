@@ -1,0 +1,59 @@
+version: '3.8'
+
+volumes:
+  rotten_vol:
+
+networks:
+  rotten_net:
+    driver: bridge
+  
+services:
+  db-mongo:
+    image: mongo:4.4.3
+    #ports:
+    #  - 27017:27017
+    networks:
+      - rotten_net
+    volumes:
+      - rotten_vol:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongouser
+      MONGO_INITDB_ROOT_PASSWORD: mongopwd 
+  rotten-potatoes:
+    image: deividfae/rotten-potatoes:v1
+    build:
+      dockerfile: ./Dockerfile
+    ports:
+      - 8082:5000
+    networks:
+      - rotten_net
+    depends_on:
+      - db-mongo
+    environment:
+      MONGODB_DB: admin
+      MONGODB_HOST: db-mongo
+      MONGODB_PORT: 27017
+      MONGODB_USERNAME: mongouser
+      MONGODB_PASSWORD: mongopwd
+  mongoexpress:
+    image: deividfae/mongo-express:v1
+    #build:
+    #  dockerfile: ./Dockerfile
+    #  context: .
+    restart: always
+    ports:
+      - 8081:8081
+    networks:
+      - rotten_net
+    depends_on:
+      - db-mongo
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongouser:mongopwd@db-mongo:27017/admin
+      ME_CONFIG_MONGODB_SERVER: db-mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_AUTH_USERNAME: mongouser
+      ME_CONFIG_MONGODB_AUTH_PASSWORD: mongopwd
+      ME_CONFIG_BASICAUTH: true
+      ME_CONFIG_BASICAUTH_USERNAME: adminuser
+      ME_CONFIG_BASICAUTH_PASSWORD: admin@pwd
+      ME_CONFIG_SITE_SESSIONSECRET: admin@pwd
